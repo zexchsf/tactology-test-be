@@ -1,0 +1,5 @@
+FROM minio/minio:latest
+
+VOLUME ["/minio_data"]
+
+EXPOSE 9000 9001

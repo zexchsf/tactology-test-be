@@ -1,0 +1,77 @@
+services:
+  # Backend API Service
+  - type: web
+    name: tactology-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: tactology-postgres
+          property: connectionString
+      - key: POSTGRES_USER
+        fromDatabase:
+          name: tactology-postgres
+          property: user
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: tactology-postgres
+          property: password
+      - key: POSTGRES_DB
+        fromDatabase:
+          name: tactology-postgres
+          property: database
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRATION
+        value: 1h
+      - key: MINIO_ENDPOINT
+        fromService:
+          name: tactology-minio
+          type: web
+          property: host
+      - key: MINIO_PORT
+        value: 9000
+      - key: MINIO_ACCESS_KEY
+        value: minioadmin
+      # Note: Set MINIO_SECRET_KEY manually in Render dashboard to match MINIO_ROOT_PASSWORD
+      - key: MINIO_SECRET_KEY
+        value: minioadmin
+      - key: MINIO_BUCKET
+        value: uploads
+      - key: MINIO_USE_SSL
+        value: false
+      - key: MAX_FILE_SIZE
+        value: 52428800
+
+  # PostgreSQL Database (using Render's managed PostgreSQL - recommended over docker-compose)
+  - type: pspg
+    name: tactology-postgres
+    plan: starter
+    databaseName: tactology
+    user: user
+
+  # MinIO Object Storage Service
+  # This mirrors the minio service from docker-compose.yml
+  - type: web
+    name: tactology-minio
+    runtime: docker
+    dockerfilePath: ./Dockerfile.minio
+    dockerContext: .
+    dockerCommand: server /minio_data --console-address ":9001"
+    envVars:
+      - key: MINIO_ROOT_USER
+        value: minioadmin
+      - key: MINIO_ROOT_PASSWORD
+        generateValue: true
+    healthCheckPath: /minio/health/live
+
+# Note: To use docker-compose.yml directly on Render, you can:
+# 1. Use Render's Blueprint feature and point to your docker-compose.yml
+# 2. Or manually configure services in Render dashboard using docker-compose.yml
+# This render.yml provides individual service definitions that match your docker-compose.yml setup
